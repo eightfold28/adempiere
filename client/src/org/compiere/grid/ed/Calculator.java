@@ -28,6 +28,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -44,8 +46,11 @@ import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 
 import org.adempiere.plaf.AdempierePLAF;
+import org.codehaus.groovy.runtime.typehandling.BigDecimalMath;
 import org.compiere.apps.ADialog;
 import org.compiere.model.MConversionRate;
+import org.compiere.plaf.CompiereColor.ColorBackground;
+import org.compiere.swing.CComboBox;
 import org.compiere.swing.CDialog;
 import org.compiere.swing.CPanel;
 import org.compiere.util.CLogger;
@@ -136,7 +141,8 @@ public final class Calculator extends CDialog
 	private boolean			m_currencyOK = false;
 	private boolean			p_disposeOnEqual = true;	//teo_sarca, bug[ 1628773 ] 
 
-	private final static String OPERANDS = "/*-+%";
+	private final static String OPERANDS = "/*-+%^" + '\u221A';
+	
 	private char			m_decimal = '.';
 	/**	Logger			*/
 	private static CLogger log = CLogger.getCLogger(Calculator.class);
@@ -168,6 +174,12 @@ public final class Calculator extends CDialog
 	private JButton bDec = new JButton();
 	private JButton b0 = new JButton();
 	private JButton bPlus = new JButton();
+	private JButton bSqrt = new JButton();
+	private JButton bPow = new JButton();
+	private CComboBox bFromCur = new CComboBox();
+	private CComboBox bToCur = new CComboBox();
+	private JButton bConvert = new JButton();
+	
 	private CPanel bordPanel = new CPanel();
 	private CPanel currencyPanel = new CPanel();
 	private BorderLayout bordLayout = new BorderLayout();
@@ -175,6 +187,8 @@ public final class Calculator extends CDialog
 	private JComboBox curTo = new JComboBox();
 	private JLabel curLabel = new JLabel();
 	private FlowLayout currencyLayout = new FlowLayout();
+	
+	private final char squareRoot = '\u221A'; 
 
 	/**
 	 *	Static init
@@ -185,9 +199,9 @@ public final class Calculator extends CDialog
 		mainPanel.setLayout(mainLayout);
 		displayPanel.setLayout(displayLayout);
 		keyPanel.setLayout(keyLayout);
-		mainLayout.setHgap(2);
-		mainLayout.setVgap(2);
-		mainPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+		mainLayout.setHgap(3);
+		mainLayout.setVgap(3);
+		mainPanel.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
 				
 		mainPanel.addKeyListener(this);
 		display.setBackground(Color.white);
@@ -207,9 +221,27 @@ public final class Calculator extends CDialog
 		b1.setText("1");
 		b2.setText("2");
 		b3.setText("3");
-		keyLayout.setColumns(5);
+		
+		bFromCur.setToolTipText("FROM");
+		bToCur.setToolTipText("TO");
+		bConvert.setText("CONVERT");
+		
+		bFromCur.addItem("USD");
+		bFromCur.addItem("EUR");
+		bFromCur.addItem("RP");
+		bFromCur.addItem("SGD");
+		bFromCur.addItem("RMB");
+		bToCur.addItem("USD");
+		bToCur.addItem("EUR");
+		bToCur.addItem("RP");
+		bToCur.addItem("SGD");
+		bToCur.addItem("RMB");
+		bFromCur.setSelectedIndex(2);
+		bToCur.setSelectedIndex(0);
+		
+		keyLayout.setColumns(6); //bagian ini yang penting
 		keyLayout.setHgap(3);
-		keyLayout.setRows(4);
+		keyLayout.setRows(5); //bagian ini yang penting
 		keyLayout.setVgap(3);
 		bCur.setForeground(Color.yellow);
 		bCur.setToolTipText(Msg.getMsg(Env.getCtx(), "CurrencyConversion"));
@@ -224,10 +256,15 @@ public final class Calculator extends CDialog
 		bMin.setText("-");
 		bProc.setForeground(Color.blue);
 		bProc.setText("%");
+		bPow.setForeground(Color.blue);
+		bPow.setText("^");
+		bSqrt.setForeground(Color.blue);
+		bSqrt.setText("" + squareRoot);
 		bAC.setForeground(Color.red);
 		bAC.setText("AC");
 		bResult.setForeground(Color.green);
 		bResult.setText("=");
+		//bResult.setPreferredSize(getMaximumSize());
 		bDec.setText(".");
 		b0.setText("0");
 		bPlus.setForeground(Color.blue);
@@ -253,26 +290,33 @@ public final class Calculator extends CDialog
 		currencyPanel.add(curLabel, null);
 		currencyPanel.add(curTo, null);
 		bordPanel.add(keyPanel, BorderLayout.CENTER);
-		keyPanel.add(bAC, null);
+		
+		keyPanel.add(bSqrt, null);
 		keyPanel.add(b7, null);
 		keyPanel.add(b8, null);
 		keyPanel.add(b9, null);
-		keyPanel.add(bM, null);
+		keyPanel.add(bAC, null);
 		keyPanel.add(bC, null);
+		keyPanel.add(bPow, null);
 		keyPanel.add(b4, null);
 		keyPanel.add(b5, null);
 		keyPanel.add(b6, null);
+		keyPanel.add(bM, null);
 		keyPanel.add(bDiv, null);
 		keyPanel.add(bProc, null);
 		keyPanel.add(b1, null);
 		keyPanel.add(b2, null);
 		keyPanel.add(b3, null);
+		keyPanel.add(bPlus, null);
 		keyPanel.add(bMin, null);
 		keyPanel.add(bCur, null);
-		keyPanel.add(b0, null);
 		keyPanel.add(bDec, null);
+		keyPanel.add(b0, null);
 		keyPanel.add(bResult, null);
-		keyPanel.add(bPlus, null);
+		
+		keyPanel.add(bFromCur, null);
+		keyPanel.add(bToCur, null);
+		keyPanel.add(bConvert, null);
 	}	//	jbInit
 
 	/**
@@ -365,7 +409,8 @@ public final class Calculator extends CDialog
 			//	Commands	===============================
 			case '/':		case '*':
 			case '-':       case '+':
-			case '%':
+			case '%':		case '^': 
+			case squareRoot:
 				if (m_display.length() > 0)
 				{
 					char last = m_display.charAt(m_display.length()-1);
@@ -375,7 +420,7 @@ public final class Calculator extends CDialog
 						m_display = m_display.substring(0, m_display.length()-1) + c;
 				}
 				m_display = m_format.format(evaluate());
-				if (c != '%')
+				if (c != '%' && c != squareRoot)
 					m_display += c;
 				break;
 
@@ -435,7 +480,6 @@ public final class Calculator extends CDialog
 			m_number = new BigDecimal(0.0);
 			return m_number;
 		}
-
 		StringTokenizer st = new StringTokenizer(m_display, OPERANDS, true);
 
 		//	first token
@@ -487,6 +531,23 @@ public final class Calculator extends CDialog
 			firstNo = firstNo.divide(new BigDecimal(100.0), m_format.getMaximumFractionDigits(), BigDecimal.ROUND_HALF_UP);
 			m_number = firstNo;
 		}
+		else if(op == squareRoot){
+			
+			BigDecimal lo = BigDecimal.ZERO;
+			BigDecimal hi = firstNo;
+			BigDecimal two = BigDecimal.valueOf(2);
+			for(int i = 0;i < 150; ++i){
+				BigDecimal mid = (lo.add(hi)).divide(two);
+				BigDecimal sqr = mid.multiply(mid);
+				if(sqr.compareTo(firstNo)<0){
+					lo = mid;
+				}
+				else{
+					hi = mid;
+				}
+			}
+			m_number = lo;
+		}
 		
 		//	no second number
 		if (!st.hasMoreTokens())
@@ -523,7 +584,7 @@ public final class Calculator extends CDialog
 		//	Percent operation
 		if (op2 == '%')
 			secondNo = secondNo.divide(new BigDecimal(100.0), m_format.getMaximumFractionDigits(), BigDecimal.ROUND_HALF_UP);
-
+		System.out.println(op);
 		switch (op)
 		{
 			case '/':
@@ -539,7 +600,11 @@ public final class Calculator extends CDialog
 			case '+':
 				m_number = firstNo.add(secondNo);
 				break;
+			case '^':
+				m_number = firstNo.pow((int)secondNo.intValueExact());
+				break;
 			default:
+				ADialog.beep();
 				break;
 		}
 		return m_number.setScale(m_format.getMaximumFractionDigits(), BigDecimal.ROUND_HALF_UP);
@@ -677,5 +742,7 @@ public final class Calculator extends CDialog
 	 */
 	public void keyReleased(KeyEvent e) {}
 
+	
+	
 }	//	Calculator
 
