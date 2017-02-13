@@ -220,8 +220,7 @@ public final class Calculator extends CDialog
 		b6.setText("6");
 		b1.setText("1");
 		b2.setText("2");
-		b3.setText("3");
-		
+		b3.setText("3");		
 		bFromCur.setToolTipText("FROM");
 		bToCur.setToolTipText("TO");
 		bConvert.setText("CONVERT");
