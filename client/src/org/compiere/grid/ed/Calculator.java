@@ -298,27 +298,27 @@ public final class Calculator extends CDialog
 		bordPanel.add(keyPanel, BorderLayout.CENTER);
 		
 		keyPanel.add(bSqrt, null);
+		keyPanel.add(bPow, null);
+		keyPanel.add(bM, null);
+		keyPanel.add(bDiv, null);
+		keyPanel.add(bProc, null);
 		keyPanel.add(b7, null);
 		keyPanel.add(b8, null);
 		keyPanel.add(b9, null);
 		keyPanel.add(bAC, null);
 		keyPanel.add(bC, null);
-		keyPanel.add(bPow, null);
 		keyPanel.add(b4, null);
 		keyPanel.add(b5, null);
 		keyPanel.add(b6, null);
-		keyPanel.add(bM, null);
-		keyPanel.add(bDiv, null);
-		keyPanel.add(bProc, null);
+		keyPanel.add(bPlus, null);
+		keyPanel.add(bMin, null);
 		keyPanel.add(b1, null);
 		keyPanel.add(b2, null);
 		keyPanel.add(b3, null);
-		keyPanel.add(bPlus, null);
-		keyPanel.add(bMin, null);
-		keyPanel.add(bCur, null);
 		keyPanel.add(bDec, null);
-		keyPanel.add(b0, null);
+		keyPanel.add(bCur, null);
 		keyPanel.add(bResult, null);
+		keyPanel.add(b0, null);
 		
 		keyPanel.add(bFromCur, null);
 		keyPanel.add(bToCur, null);
