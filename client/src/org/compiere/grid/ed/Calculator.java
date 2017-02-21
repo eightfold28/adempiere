@@ -27,9 +27,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.HttpURLConnection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -223,16 +230,16 @@ public final class Calculator extends CDialog
 		b3.setText("3");		
 		bFromCur.setToolTipText("FROM");
 		bToCur.setToolTipText("TO");
-		bConvert.setText("CONVERT");
+		bConvert.setText("KONVERSI");
 		
 		bFromCur.addItem("USD");
 		bFromCur.addItem("EUR");
-		bFromCur.addItem("RP");
+		bFromCur.addItem("IDR");
 		bFromCur.addItem("SGD");
 		bFromCur.addItem("RMB");
 		bToCur.addItem("USD");
 		bToCur.addItem("EUR");
-		bToCur.addItem("RP");
+		bToCur.addItem("IDR");
 		bToCur.addItem("SGD");
 		bToCur.addItem("RMB");
 		bFromCur.setSelectedIndex(2);
@@ -448,6 +455,111 @@ public final class Calculator extends CDialog
 					dispose();
 				break;
 
+			// konversi uang
+			case 'K':
+				String USER_AGENT = "Mozilla/5.0";
+				URL url;
+				HttpURLConnection con;
+				String curAwal = String.valueOf(bFromCur.getSelectedItem());
+				String curAkhir = String.valueOf(bToCur.getSelectedItem());
+				try {
+					url = new URL("http://api.fixer.io/latest");
+					con = (HttpURLConnection) url.openConnection();
+					con.setDoOutput(true);
+					con.setRequestMethod("GET");
+			        con.setRequestProperty("User-Agent", USER_AGENT);
+			        
+			        int responseCode = con.getResponseCode();
+
+			        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			        String inputLine;
+			        StringBuilder resp = new StringBuilder();
+			        while ((inputLine = in.readLine()) != null) {
+			            resp.append(inputLine);
+			        }
+			        in.close();
+			        String res = resp.toString();
+			        
+			        double valueAwal = 0, valueAkhir = 0;
+			        if(curAwal.equals("EUR")) valueAwal = 1;
+			        else{
+			        	for(int i = 0;i < res.length(); ++i){
+				        	boolean match = true;
+				        	for(int j = 0; j < curAwal.length() && match; ++j){
+				        		if(res.charAt(i + j) != curAwal.charAt(j)){
+				        			match = false;
+				        		}
+				        	}
+				        	if(match){
+				        		while(i < res.length() && (res.charAt(i) < '0' || res.charAt(i) > '9')) ++i;
+				        		String val = "" + res.charAt(i); i++;
+				        		while(i < res.length() && (res.charAt(i) == '.' || (res.charAt(i) >= '0' && res.charAt(i) <= '9'))) {
+				        			val += res.charAt(i);
+				        			++i;
+				        		}
+				        		valueAwal = Double.parseDouble(val);
+				        		//boolean koma = false;
+				        		/*double belakang = 0, divisor = 1;
+				        		while(i < res.length () && res.charAt(i) != ' '){
+				        			if(res.charAt(i) == '.') koma = true;
+				        			else if(!koma){
+				        				String xnow = "" + res.charAt(i);
+				        				valueAwal *= 10;
+				        				valueAwal += Integer.parseInt(xnow);
+				        			}
+				        			else{
+				        				String xnow = "" + res.charAt(i);
+				        				belakang *= 10;
+				        				divisor *= 10;
+				        				belakang += Integer.parseInt(xnow);
+				        			}
+				        			++i;
+				        		}
+				        		valueAwal += belakang / divisor;*/
+				        		
+				        		break;
+				        	}
+				        }
+			        }
+				       
+			        if(curAkhir.equals("EUR")) valueAkhir = 1;
+			        else{
+			        	for(int i = 0;i < res.length(); ++i){
+				        	boolean match = true;
+				        	for(int j = 0; j < curAkhir.length() && match; ++j){
+				        		if(res.charAt(i + j) != curAkhir.charAt(j)){
+				        			match = false;
+				        		}
+				        	}
+				        	if(match){
+				        		while(i < res.length() && (res.charAt(i) < '0' || res.charAt(i) > '9')) ++i;
+				        		String val = "" + res.charAt(i); i++;
+				        		while(i < res.length() && (res.charAt(i) == '.' || (res.charAt(i) >= '0' && res.charAt(i) <= '9'))) {
+				        			val += res.charAt(i);
+				        			++i;
+				        		}
+				        		valueAkhir = Double.parseDouble(val);
+				   
+				        		break;
+				        	}
+				        }
+			        }
+			        
+			        Double uangAwal = Double.parseDouble(m_display);
+			        Double uangAkhir = uangAwal * valueAkhir / valueAwal;
+			        m_display = uangAkhir.toString();
+			        
+			        con.disconnect();
+			        
+				} catch (MalformedURLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				break;
+				
 			//	Error		===============================
 			default:
 				ADialog.beep();
