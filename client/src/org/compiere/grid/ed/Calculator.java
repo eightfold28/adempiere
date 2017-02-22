@@ -236,12 +236,10 @@ public final class Calculator extends CDialog
 		bFromCur.addItem("EUR");
 		bFromCur.addItem("IDR");
 		bFromCur.addItem("SGD");
-		bFromCur.addItem("RMB");
 		bToCur.addItem("USD");
 		bToCur.addItem("EUR");
 		bToCur.addItem("IDR");
 		bToCur.addItem("SGD");
-		bToCur.addItem("RMB");
 		bFromCur.setSelectedIndex(2);
 		bToCur.setSelectedIndex(0);
 		
