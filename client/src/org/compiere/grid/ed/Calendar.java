@@ -896,7 +896,9 @@ public class Calendar extends CDialog
 							admpass = lines.get(1);
 						}    
 						String[] monthNames = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+
 					    System.out.println("masuk gasih");
+
 						List<String> recipients=Files.readAllLines(Paths.get("users-email.txt"), Charset.forName("UTF-8"));
 							for (String rec: recipients) {
 					        Properties props = System.getProperties();
@@ -908,8 +910,10 @@ public class Calendar extends CDialog
 					        msg.setRecipients(Message.RecipientType.TO,
 					        InternetAddress.parse(rec, false));
 					        msg.setSubject("[Adempiere] Event Notification");
+
 					        msg.setText("This is a notification message for event on " + eventName + "\n" +
 					        		"The event will be held on " + String.valueOf(m_currentDay) + " " + monthNames[m_currentMonth-1] + " " +
+
 					        		String.valueOf(m_currentYear));
 					        msg.setHeader("X-Mailer", "Tov Are's program");
 					        msg.setSentDate(new Date());

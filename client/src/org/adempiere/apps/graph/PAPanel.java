@@ -22,6 +22,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.Box;
+import javax.swing.JButton;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 
@@ -117,7 +118,8 @@ public class PAPanel extends CPanel implements ActionListener
 		// HTML/Bars
 		Box boxV2 = Box.createVerticalBox();
 		// barChart
-		Box boxH1 = Box.createHorizontalBox();
+		final Box boxH1 = Box.createHorizontalBox();
+		final Box boxH2 = Box.createHorizontalBox();
 		//boxH_V.setPreferredSize(new Dimension(180, 1500));
 		//boxH1.setPreferredSize(new Dimension(400, 180));		
 		boxV2.setPreferredSize(new Dimension(120, 120));
@@ -138,13 +140,41 @@ public class PAPanel extends CPanel implements ActionListener
 		// RIGHT, HTML + Bars
 	    HtmlDashboard contentHtml = new HtmlDashboard("http:///local/home", m_goals, true);
 	    boxV2.add(contentHtml, BorderLayout.CENTER);
+	    final JButton btnLine = new JButton("Line Graph");
+	    final JButton btnBar = new JButton("Bar Graph");
+	    boxV2.add(btnLine, BorderLayout.CENTER);
+	    boxV2.add(btnBar, BorderLayout.CENTER);
 	    
 		for (int i = 0; i < java.lang.Math.min(2, m_goals.length); i++)
 		{
 			if (m_goals[i].getMeasure() != null) //MGoal goal = pi.getGoal();
-				boxH1.add ( new Graph(m_goals[i]), BorderLayout.SOUTH);
+				boxH1.add ( new GraphLine(m_goals[i]), BorderLayout.SOUTH);
+				boxH2.add ( new Graph(m_goals[i]), BorderLayout.SOUTH);
 		}
 	    boxV2.add(boxH1, BorderLayout.SOUTH);
+	    boxV2.add(boxH2, BorderLayout.SOUTH);
+	    boxH1.setVisible(true);
+	    boxH2.setVisible(false);
+	    btnLine.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent e) {
+	            if (btnLine.isEnabled()) {
+	                System.out.println("Line Button is pressed");
+	                boxH1.setVisible(true);
+	                boxH2.setVisible(false);
+	            }
+	        }
+	    });
+	    
+	    btnBar.addActionListener(new ActionListener() {
+	        public void actionPerformed(ActionEvent e) {
+	            if (btnBar.isEnabled()) {
+	                System.out.println("Bar Button is pressed");
+	                //DEBUG
+	                boxH1.setVisible(false);
+	                boxH2.setVisible(true);
+	            }
+	        }
+	    });
 	    
 	    // below HEADER
 	    boxH.add(scrollPane, BorderLayout.WEST );
