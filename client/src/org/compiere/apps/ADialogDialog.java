@@ -139,7 +139,7 @@ public final class ADialogDialog extends CDialog implements ActionListener
 	private static Icon i_error = Env.getImageIcon("Error32.gif");
 
 	private JMenuBar menuBar = new JMenuBar();
-	private JMenu mFile = AEnv.getMenu("File");
+	// private JMenu mFile = AEnv.getMenu("File");
 	private CMenuItem mEMail = new CMenuItem();
 	private CMenuItem mPrintScreen = new CMenuItem();
 	private CMenuItem mScreenShot = new CMenuItem();
@@ -194,15 +194,15 @@ public final class ADialogDialog extends CDialog implements ActionListener
 		infoPanel.add(info, new GridBagConstraints(0, 1, 1, 1, 1.0, 1.0
 			,GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(10, 10, 10, 10), 0, 0));
 		//
-		menuBar.add(mFile);
-		mFile.add(mPrintScreen);
-		mFile.add(mScreenShot);
-		mFile.addSeparator();
-		mFile.add(mEMail);
-		if (MRole.getDefault().isShowPreference())
-			mFile.add(mPreference);
-		mFile.addSeparator();
-		mFile.add(mEnd);
+		// menuBar.add(mFile);
+		// mFile.add(mPrintScreen);
+		// mFile.add(mScreenShot);
+		// mFile.addSeparator();
+		// mFile.add(mEMail);
+		// if (MRole.getDefault().isShowPreference())
+		// 	mFile.add(mPreference);
+		// mFile.addSeparator();
+		// mFile.add(mEnd);
 		//
 		confirmPanel.addActionListener(this);
 	}	//	jbinit
