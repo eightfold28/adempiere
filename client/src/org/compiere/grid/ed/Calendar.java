@@ -16,8 +16,22 @@
  *****************************************************************************/
 package org.compiere.grid.ed;
 
+import org.compiere.apps.ADialog;
+import java.io.*;
+import java.net.InetAddress;
+import java.util.Properties;
+import java.util.Date;
+
+import javax.mail.*;
+
+import javax.mail.internet.*;
+
+import com.sun.mail.smtp.*;
+import org.compiere.model.MUserMail;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -30,19 +44,28 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.*;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.StringTokenizer;
 import java.util.TimeZone;
 import java.util.logging.Level;
+import java.net.*;
+import java.io.*;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
@@ -57,10 +80,13 @@ import org.compiere.swing.CLabel;
 import org.compiere.swing.CPanel;
 import org.compiere.util.CLogger;
 import org.compiere.util.DisplayType;
+import org.compiere.util.EMail;
 import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
 import org.compiere.util.Language;
 import org.compiere.util.Msg;
+
+
 
 /**
  *  Pop up Calendar & Time
@@ -80,6 +106,7 @@ public class Calendar extends CDialog
 	 *  Mimimum Constructor for Date editor
 	 *  @param frame frame
 	 */
+	
 	public Calendar (Frame frame)
 	{
 		this (frame, Msg.getMsg(Env.getCtx(), "Calendar"), null, DisplayType.Date);
@@ -344,6 +371,10 @@ public class Calendar extends CDialog
 		m_days[m_days.length-3].setBackground(Color.yellow);
 		m_days[m_days.length-3].setText(Msg.getMsg(Env.getCtx(), "Key_Clear"));
 		m_days[m_days.length-3].setToolTipText(Msg.getMsg(Env.getCtx(), "Clear"));
+		//	Add event
+		m_days[m_days.length-4].setBackground(Color.orange);
+		m_days[m_days.length-4].setText("+");
+		m_days[m_days.length-4].setToolTipText("Add Event");
 
 		//	Date/Time
 		m_current24Hour = m_calendar.get(java.util.Calendar.HOUR_OF_DAY);
@@ -427,7 +458,130 @@ public class Calendar extends CDialog
 		return retValue;
 	}	//	getHours
 
+	/**
+	 * 	Create 12/25 hours
+	 *  @return Array with hours as String
+	 */
+	private ArrayList<String> getHoliday(int year, int month)
+	{
+		ArrayList<String> tglLibur = new ArrayList<String>();
+		if (month == 1) {
+			tglLibur.add("01|Tahun Baru Masehi");
+		} else if (month == 5) {
+			tglLibur.add("01|Hari Buruh Nasional");
+		} else if (month == 6) {
+			tglLibur.add("01|Hari Lahir Pancasila");
+		} else if (month == 8) {
+			tglLibur.add("17|Hari Kemerdekaan Indonesia");
+		} else if (month == 12) {
+			tglLibur.add("25|Hari Raya Natal");
+		}
+		// Jumat Agung
+	    int a = year % 19;
+	    int b = year % 7;
+	    int c = year % 4;
 
+	    int d = (19 * a + 16) % 30;
+	    int e = (2 * c + 4 * b + 6 * d) % 7;
+	    int f = (19 * a + 16) % 30;
+	    int key = f + e + 3;
+
+	    int gmonth;
+	    int gday;
+	    int kmonth;
+	    int kday;
+	    if (key > 30) {
+	    	gmonth = 5;
+	    	gday = key-30;
+	    } else {
+	    	gmonth = 4;
+	    	gday = key;
+	    }
+	    kmonth = gmonth + 1;
+	    kday = gday + 12;
+	    if (kday > 31) {
+	    	kday--;
+	    	kmonth++;
+	    }
+	    if (month == gmonth) {
+	    	tglLibur.add(String.valueOf(gday) + "|Jumat Agung");
+	    }
+	    if (month == kmonth) {
+	    	tglLibur.add(String.valueOf(kday) + "|Kenaikan Isa Almasih");
+	    }
+	    if (year == m_calendar.get(java.util.Calendar.YEAR)) {
+		    try {
+		        URL web = new URL("http://kalender.web.id/2017.html");
+		        URLConnection yc = web.openConnection();
+		        BufferedReader in = new BufferedReader(
+		                                new InputStreamReader(
+		                                yc.getInputStream()));
+		        String inputLine;
+		        while ((inputLine = in.readLine()) != null)
+		        	if (inputLine.contains("<tr><td>")) {
+		        		inputLine = inputLine.replace("<td>","|");
+					    StringTokenizer stok = new StringTokenizer(inputLine, "|");
+					    String tokens[] = new String[stok.countTokens()];
+					    for(int i=0; i<tokens.length; i++){
+					        tokens[i] = stok.nextToken();
+					    }
+		        		System.out.println(tokens[1]);
+		        		System.out.println(tokens[3]);
+		        		System.out.println();
+					    StringTokenizer stok2 = new StringTokenizer(tokens[1], " ");
+					    String tokens2[] = new String[stok2.countTokens()];
+					    for(int i=0; i<tokens2.length; i++){
+					        tokens2[i] = stok2.nextToken();
+					    }
+					    try {
+					    	int tgl = Integer.parseInt(tokens2[0]);
+					    	int bulan = 0;
+					    	if (tokens2[1].equals("Januari")) {
+					    		bulan = 1;
+					    	} else if (tokens2[1].equals("Februari")) {
+					    		bulan = 2;
+					    	} else if (tokens2[1].equals("Maret")) {
+					    		bulan = 3;
+					    	} else if (tokens2[1].equals("April")) {
+					    		bulan = 4;
+					    	} else if (tokens2[1].equals("Mei")) {
+					    		bulan = 5;
+					    	} else if (tokens2[1].equals("Juni")) {
+					    		bulan = 6;
+					    	} else if (tokens2[1].equals("Juli")) {
+					    		bulan = 7;
+					    	} else if (tokens2[1].equals("Agustus")) {
+					    		bulan = 8;
+					    	} else if (tokens2[1].equals("September")) {
+					    		bulan = 9;
+					    	} else if (tokens2[1].equals("Oktober")) {
+					    		bulan = 10;
+					    	} else if (tokens2[1].equals("November")) {
+					    		bulan = 11;
+					    	} else if (tokens2[1].equals("Desember")) {
+					    		bulan = 12;
+					    	}
+					    	if (month == bulan) {
+						    	String date = "";
+						    	if (String.valueOf(tgl).length() == 1) {
+						    		date = "0" + String.valueOf(tgl);
+						    	} else {
+						    		date = String.valueOf(tgl);
+						    	}
+						    	tglLibur.add(date + "|" + tokens[3].replace("</td>",""));
+					    	}
+					    } catch (Exception ex) {
+					    	System.out.println(ex);
+					    }
+		        	}
+		        in.close();
+		    } catch(Exception ex) {
+		    	System.out.println(ex);
+		    }
+	    }
+		return tglLibur;
+	}
+	
 	/**************************************************************************
 	 *	Set Calendar from m_current variables and update UI
 	 */
@@ -454,10 +608,10 @@ public class Calendar extends CDialog
 		if (dayOne < 0)
 			dayOne += 7;
 		lastDate += dayOne - 1;
-
+		
 		//	for all buttons but the last
 		int curDay = 1;
-		for (int i = 0; i < m_days.length-3; i++)
+		for (int i = 0; i < m_days.length-4; i++)
 		{
 			if (i >= dayOne && i <= lastDate)
 			{
@@ -483,7 +637,57 @@ public class Calendar extends CDialog
 				m_days[i].setBackground(AdempierePLAF.getFieldBackground_Inactive());
 			}
 		}
+		
+		ArrayList<String> holiday = getHoliday(m_currentYear, m_currentMonth);
+		if (holiday.size() > 0) {
+			int i = 0;
+			while (i < holiday.size()) {
+				//int count = 0;
+				System.out.println(holiday.get(i));
+				System.out.println(holiday.get(i).substring(0,2));
+				int hDay = Integer.parseInt(holiday.get(i).substring(0,2));
+				System.out.println(hDay);
+				m_days[dayOne+hDay-1].setBackground(Color.red);
+				m_days[dayOne+hDay-1].setToolTipText("<html>" + holiday.get(i).substring(3));
+				i++;
+			}
+		}
+		try {
+			List<String> lines=Files.readAllLines(Paths.get("event.txt"), Charset.forName("UTF-8"));
+			for(String line:lines){
+				int cday, cmonth, cyear;
+			    StringTokenizer stok = new StringTokenizer(line, "|");
+			    String tokens[] = new String[stok.countTokens()];
+			    for(int i=0; i<tokens.length; i++){
+			        tokens[i] = stok.nextToken();
+			        tokens[i] = tokens[i].trim();
+			    }
+			    cday = Integer.parseInt(tokens[0]);
+			    cmonth = Integer.parseInt(tokens[1]);
+			    cyear = Integer.parseInt(tokens[2]);
+			    if (m_currentYear == cyear && m_currentMonth == cmonth) {
+			    	System.out.println(tokens[3]);
+			    	if (m_days[dayOne+cday-1].getToolTipText() == null) {
+			    		m_days[dayOne+cday-1].setToolTipText("<html>" + tokens[3]);
+			    	} else {
+			    		m_days[dayOne+cday-1].setToolTipText(m_days[dayOne+cday-1].getToolTipText() + "<br>" + tokens[3]);
+			    	}
+			    }
+			}
+		} catch (Exception ex) {
+			System.out.println(ex);
+		}
+		
 
+		for (int i = 0; i < m_days.length-4; i++)
+		{
+			if (i >= dayOne && i <= lastDate)
+			{
+				if (m_days[i].getToolTipText() != null) {
+					m_days[i].setToolTipText(m_days[i].getToolTipText()+"</html>");
+				}
+			}
+		}
 		if ( !userTime )
 		{
 			m_current24Hour = 0;
@@ -648,6 +852,80 @@ public class Calendar extends CDialog
 			{
 				m_clear = true;
 				dispose();
+				return;
+			}
+			//	Add Event
+			else if (text.equals("+"))
+			{
+				String eventName = "";
+				eventName = JOptionPane.showInputDialog("Event Name");
+				if (eventName.isEmpty()) {
+					return;
+				}
+				String report = "Are you sure you want to add an event?";
+				ArrayList<String> holiday = getHoliday(m_currentYear, m_currentMonth);
+				if (holiday.size() > 0) {
+					//int count = 0;
+					System.out.println(holiday.get(0));
+					System.out.println(holiday.get(0).substring(0,2));
+					int hDay = Integer.parseInt(holiday.get(0).substring(0,2));
+					if (hDay == m_currentDay) {
+						report = "Are you sure you want to add an event on " + holiday.get(0).substring(3) + "?";
+					}
+				}
+				int result = JOptionPane.showConfirmDialog(null, report, "Event Confirmation", JOptionPane.YES_NO_OPTION);
+				if (result == JOptionPane.YES_OPTION) {
+					System.out.println(m_currentDay);
+					try {
+						String eventDate = String.valueOf(m_currentDay) + "|" + String.valueOf(m_currentMonth) + "|"  + String.valueOf(m_currentYear) + "|"  + eventName + "\n";
+					    Files.write(Paths.get("event.txt"), eventDate.getBytes(), StandardOpenOption.APPEND);
+
+						
+					}catch (IOException ex) {
+						System.out.println(ex);
+					    //exception handling left as an exercise for the reader
+					}
+					
+					// SENDING EMAIL
+					try {
+						String admemail = "pro.gardener1337@gmail.com";
+						String admpass = "gardener777";
+						List<String> lines=Files.readAllLines(Paths.get("admin-login.txt"), Charset.forName("UTF-8"));
+						if (lines.size() >= 2) {
+							admemail = lines.get(0);
+							admpass = lines.get(1);
+						}    
+						String[] monthNames = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+					    
+						List<String> recipients=Files.readAllLines(Paths.get("users-email.txt"), Charset.forName("UTF-8"));
+							for (String rec: recipients) {
+					        Properties props = System.getProperties();
+					        props.put("mail.smtps.host","smtp.gmail.com");
+					        props.put("mail.smtps.auth","true");
+					        Session session = Session.getInstance(props, null);
+					        Message msg = new MimeMessage(session);
+					        msg.setFrom(new InternetAddress("mail@tovare.com"));;
+					        msg.setRecipients(Message.RecipientType.TO,
+					        InternetAddress.parse(rec, false));
+					        msg.setSubject("[Adempiere] Event Notification");
+					        msg.setText("This is a notification message for event on " + holiday.get(0).substring(3) + "\n" +
+					        		"The event will be held on " + String.valueOf(m_currentDay) + " " + monthNames[m_currentMonth] + " " +
+					        		String.valueOf(m_currentYear));
+					        msg.setHeader("X-Mailer", "Tov Are's program");
+					        msg.setSentDate(new Date());
+					        SMTPTransport t =
+					            (SMTPTransport)session.getTransport("smtps");
+					        t.connect("smtp.gmail.com", admemail, admpass);
+					        t.sendMessage(msg, msg.getAllRecipients());
+					        System.out.println("Response: " + t.getLastServerResponse());
+					        t.close();
+						}
+					} catch (Exception ex) {
+						System.out.println(ex);
+					}
+				} else {
+					System.out.println("SEBASTIAN!");
+				}
 				return;
 			}
 			//	we have a day
